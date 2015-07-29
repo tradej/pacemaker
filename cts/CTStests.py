@@ -3,6 +3,10 @@
 There are a few things we want to do here:
 
  '''
+from __future__ import absolute_import
+from __future__ import print_function
+from six.moves import range
+from six.moves import input
 
 __copyright__ = '''
 Copyright (C) 2000, 2001 Alan Robertson <alanr@unix.sh>
@@ -38,7 +42,7 @@ Add RecourceRecover testcase Zhao Kai <zhaokai@cn.ibm.com>
 #                Thank you.
 #
 
-import time, os, re, string, tempfile
+import time, os, re, six, string, tempfile
 from stat import *
 from cts import CTS
 from cts.CTSaudits import *
@@ -51,6 +55,10 @@ from cts.environment import EnvFactory
 
 AllTestClasses = [ ]
 
+if six.PY3: # Python 2 + 3 compatible code
+    num = int
+else:
+    num = long
 
 class CTSTest:
     '''
@@ -97,7 +105,7 @@ class CTSTest:
         self.logger.debug(args)
 
     def has_key(self, key):
-        return self.Stats.has_key(key)
+        return key in self.Stats
 
     def __setitem__(self, key, value):
         self.Stats[key] = value
@@ -128,7 +136,7 @@ class CTSTest:
 
     def incr(self, name):
         '''Increment (or initialize) the value associated with the given name'''
-        if not self.Stats.has_key(name):
+        if name not in self.Stats:
             self.Stats[name] = 0
         self.Stats[name] = self.Stats[name]+1
 
@@ -534,7 +542,7 @@ class StonithdTest(CTSTest):
         if not self.is_applicable_common():
             return 0
 
-        if self.Env.has_key("DoFencing"):
+        if "DoFencing" in self.Env:
             return self.Env["DoFencing"]
 
         return 1
@@ -1048,7 +1056,7 @@ class BandwidthTest(CTSTest):
                 T1 = linesplit[0]
                 timesplit = string.split(T1,":")
                 time2split = string.split(timesplit[2],".")
-                time1 = (long(timesplit[0])*60+long(timesplit[1]))*60+long(time2split[0])+long(time2split[1])*0.000001
+                time1 = (num(timesplit[0])*60+num(timesplit[1]))*60+num(time2split[0])+num(time2split[1])*0.000001
                 break
 
         while count < 100:
@@ -1070,7 +1078,7 @@ class BandwidthTest(CTSTest):
         T2 = linessplit[0]
         timesplit = string.split(T2,":")
         time2split = string.split(timesplit[2],".")
-        time2 = (long(timesplit[0])*60+long(timesplit[1]))*60+long(time2split[0])+long(time2split[1])*0.000001
+        time2 = (num(timesplit[0])*60+num(timesplit[1]))*60+num(time2split[0])+num(time2split[1])*0.000001
         time = time2-time1
         if (time <= 0):
             return 0
@@ -1574,22 +1582,22 @@ class SplitBrainTest(CTSTest):
             p_max = len(self.Env["nodes"])
             for node in self.Env["nodes"]:
                 p = self.Env.RandomGen.randint(1, p_max)
-                if not partitions.has_key(p):
+                if p not in partitions:
                     partitions[p] = []
                 partitions[p].append(node)
-            p_max = len(partitions.keys())
+            p_max = len(list(partitions.keys()))
             if p_max > 1:
                 break
             # else, try again
 
         self.debug("Created %d partitions" % p_max)
-        for key in partitions.keys():
+        for key in list(partitions.keys()):
             self.debug("Partition["+str(key)+"]:\t"+repr(partitions[key]))
 
         # Disabling STONITH to reduce test complexity for now
         self.rsh(node, "crm_attribute -V -n stonith-enabled -v false")
 
-        for key in partitions.keys():
+        for key in list(partitions.keys()):
             self.isolate_partition(partitions[key])
 
         count = 30
@@ -1612,7 +1620,7 @@ class SplitBrainTest(CTSTest):
         self.CM.partitions_expected = 1
 
         # And heal them again
-        for key in partitions.keys():
+        for key in list(partitions.keys()):
             self.heal_partition(partitions[key])
 
         # Wait for a single partition to form
@@ -1647,7 +1655,7 @@ class SplitBrainTest(CTSTest):
         # trying to continue with in a messed up state
         if not self.CM.cluster_stable(1200):
             self.failure("Reformed cluster not stable")
-            answer = raw_input('Continue? [nY]')
+            answer = input('Continue? [nY]')
             if answer and answer == "n":
                 raise ValueError("Reformed cluster not stable")
 
@@ -2247,11 +2255,11 @@ class RollingUpgradeTest(CTSTest):
         if not self.is_applicable_common():
             return None
 
-        if not self.Env.has_key("rpm-dir"):
+        if "rpm-dir" not in self.Env:
             return None
-        if not self.Env.has_key("current-version"):
+        if "current-version" not in self.Env:
             return None
-        if not self.Env.has_key("previous-version"):
+        if "previous-version" not in self.Env:
             return None
 
         return 1
@@ -2305,7 +2313,7 @@ class BSC_AddResource(CTSTest):
         if ":" in ip:
             fields = ip.rpartition(":")
             fields[2] = str(hex(int(fields[2], 16)+1))
-            print str(hex(int(f[2], 16)+1))
+            print(str(hex(int(f[2], 16)+1)))
         else:
             fields = ip.rpartition('.')
             fields[2] = str(int(fields[2])+1)
@@ -3109,7 +3117,7 @@ class RemoteStonithd(CTSTest):
         if not self.driver.is_applicable():
             return False
 
-        if self.Env.has_key("DoFencing"):
+        if "DoFencing" in self.Env:
             return self.Env["DoFencing"]
 
         return True
