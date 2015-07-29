@@ -1,6 +1,7 @@
 '''
 Classes related to searching logs
 '''
+from __future__ import absolute_import
 
 __copyright__='''
 Copyright (C) 2014 Andrew Beekhof <andrew@beekhof.net>
@@ -158,7 +159,7 @@ class FileObj(SearchObj):
         SearchObj.__init__(self, filename, host, name)
 
         if host is not None:
-            if not has_log_watcher.has_key(host):
+            if host not in has_log_watcher:
 
                 global log_watcher
                 global log_watcher_bin
