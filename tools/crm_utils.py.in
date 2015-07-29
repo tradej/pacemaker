@@ -1,9 +1,11 @@
+from __future__ import absolute_import
+from __future__ import print_function
 #!/bin/env python
 #
 #
-#	pingd OCF Resource Agent
-#	Records (in the CIB) the current number of ping nodes a 
-#	   cluster node can connect to.
+#        pingd OCF Resource Agent
+#        Records (in the CIB) the current number of ping nodes a
+#           cluster node can connect to.
 #
 # Copyright (c) 2006 Andrew Beekhof
 #                    All Rights Reserved.
@@ -43,32 +45,32 @@ global_opts = {}
 
 def exit_(code=0):
     if global_opts["interactive"]:
-	log_info("Exiting... ")
+        log_info("Exiting... ")
     try:
-	readline.write_history_file(hist_file)
-	log_debug("Wrote history to: "+hist_file)
+        readline.write_history_file(hist_file)
+        log_debug("Wrote history to: "+hist_file)
     except:
-	log_debug("Couldnt write history to: "+hist_file)
+        log_debug("Couldnt write history to: "+hist_file)
     sys.exit(code)
 
 def log_debug(log):
-    if global_opts.has_key("debug") and global_opts["debug"]:
-	print log
+    if "debug" in global_opts and global_opts["debug"]:
+        print(log)
 
 def log_dev(log):
-    if global_opts.has_key("devlog") and global_opts["devlog"]:
-	print log
+    if "devlog" in global_opts and global_opts["devlog"]:
+        print(log)
 
 def log_info(log):
-    print log
+    print(log)
 
 def log_err(log):
-    print "ERROR: "+log
+    print("ERROR: "+log)
 
 def set_topic(name):
     global crm_topic
     if crm_topic != name:
-    	log_dev("topic: %s->%s" % (crm_topic, name))
+            log_dev("topic: %s->%s" % (crm_topic, name))
     crm_topic = name
 
 def os_system(cmd, print_raw=False):
@@ -79,8 +81,8 @@ def os_system(cmd, print_raw=False):
     p.fromchild.close()
     p.wait()
     if print_raw:
-	for line in result:
-	    print line.rstrip()
+        for line in result:
+            print(line.rstrip())
     return result
 
 #
@@ -91,74 +93,74 @@ def create_argv(text):
     word = []
     index = 0
     total = len(text)
-    
+
     in_word = False
     in_verbatum = False
-    
-    while index < total:
-	finish_word = False
-	append_word = False
-	#log_debug("processing: "+text[index])
-	if text[index] == '\\':
-	    index = index +1
-	    append_word = True
-	    
-	elif text[index].isspace():
-	    if in_verbatum or in_word:
-		append_word = True
-	    else:
-		finish_word = True
-		
-	elif text[index] == '"':
-	    if in_verbatum:
-		append_word = True
-	    else:
-		finish_word = True
-		if in_word:
-		    in_word = False
-		else:
-		    in_word = True
-		    
-	elif text[index] == '\'':
-	    finish_word = True
-	    if in_verbatum:
-		in_verbatum = False
-	    else:
-		in_verbatum = True
-	else:
-	    append_word = True
 
-	if finish_word:
-	    if word:
-		args.append(''.join(word))
-		word = []
-	elif append_word:
-	    word.append(text[index])
-	    #log_debug("Added %s to word: %s" % (text[index], str(word)))
-	
-	index = index +1
+    while index < total:
+        finish_word = False
+        append_word = False
+        #log_debug("processing: "+text[index])
+        if text[index] == '\\':
+            index = index +1
+            append_word = True
+
+        elif text[index].isspace():
+            if in_verbatum or in_word:
+                append_word = True
+            else:
+                finish_word = True
+
+        elif text[index] == '"':
+            if in_verbatum:
+                append_word = True
+            else:
+                finish_word = True
+                if in_word:
+                    in_word = False
+                else:
+                    in_word = True
+
+        elif text[index] == '\'':
+            finish_word = True
+            if in_verbatum:
+                in_verbatum = False
+            else:
+                in_verbatum = True
+        else:
+            append_word = True
+
+        if finish_word:
+            if word:
+                args.append(''.join(word))
+                word = []
+        elif append_word:
+            word.append(text[index])
+            #log_debug("Added %s to word: %s" % (text[index], str(word)))
+
+        index = index +1
 
     if in_verbatum or in_word:
-	text=""
-	if word:
-	    text=" after: '%s'"%''.join(word)
-	    raise QuotingError("Un-matched quoting%s"%text, args)
-	
+        text=""
+        if word:
+            text=" after: '%s'"%''.join(word)
+            raise QuotingError("Un-matched quoting%s"%text, args)
+
     elif word:
-	args.append(''.join(word))
+        args.append(''.join(word))
 
     return args
-	  
+
 def init_readline(func):
     readline.set_completer(func)
     readline.parse_and_bind("tab: complete")
     readline.set_history_length(100)
-    
+
     try:
-	readline.read_history_file(hist_file)
+        readline.read_history_file(hist_file)
     except:
-	pass
-	    
+        pass
+
 def fancyopts(args, options, state):
     long = []
     short = ''
@@ -174,9 +176,9 @@ def fancyopts(args, options, state):
             if s: s += ':'
             if l: l += '='
         if s: short = short + s
-        if l: long.append(l)
+        if l: int.append(l)
 
-    opts, args = getopt.getopt(args, short, long)
+    opts, args = getopt.getopt(args, short, int)
 
     for opt, arg in opts:
         if dt[map[opt]] is type(fancyopts): state[map[opt]](state,map[opt],arg)

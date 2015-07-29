@@ -46,6 +46,8 @@ import os,re
 #	Constrain them to only run on the local system?
 #	Put them all in a convenience group (no colocation, no ordering)
 #	Add start and stop timeouts
+from __future__ import absolute_import
+from __future__ import print_function
 
 ServiceKeywords = {}
 ServiceMap = {}
@@ -73,7 +75,7 @@ def find_ordered_services(dir):
     if not matchobj:
       continue
     service = matchobj.group(1)
-    if SkipMap.has_key(service):
+    if service in SkipMap:
       continue
     if service_is_hb_compatible(service):
       services.append(service)
@@ -84,7 +86,7 @@ def find_ordered_services(dir):
 
 def register_services(initdir, services):
   for service in services:
-    if not ServiceMap.has_key(service):
+    if service not in ServiceMap:
        ServiceMap[service] = os.path.join(initdir, service)
   for service in services:
     script_dependency_scan(service, os.path.join(initdir, service), ServiceMap)
@@ -170,14 +172,14 @@ def script_dependency_scan(service, script, servicemap):
   ServiceKeywords[service] = keywords
 
 SysServiceGuesses = {
-  '$local_fs':		['boot.localfs'],
-  '$network':		['network'],
-  '$named':		['named'],
-  '$portmap':		['portmap'],
-  '$remote_fs':		['nfs'],
-  '$syslog':		['syslog'],
-  '$netdaemons':	['portmap', 'inetd'],
-  '$time':		['ntp'],
+  '$local_fs': ['boot.localfs'],
+  '$network': ['network'],
+  '$named': ['named'],
+  '$portmap': ['portmap'],
+  '$remote_fs': ['nfs'],
+  '$syslog': ['syslog'],
+  '$netdaemons': ['portmap', 'inetd'],
+  '$time': ['ntp'],
 }
 
 #
@@ -188,11 +190,11 @@ SysServiceGuesses = {
 #
 def map_sys_services(servicemap):
   sysservicemap = {}
-  for sysserv in SysServiceGuesses.keys():
+  for sysserv in list(SysServiceGuesses.keys()):
     servlist = SysServiceGuesses[sysserv]
     result = []
     for service in servlist:
-      if servicemap.has_key(service):
+      if service in servicemap:
         result.append(service)
 
     sysservicemap[sysserv] = result
@@ -203,19 +205,19 @@ def map_sys_services(servicemap):
 #
 def create_service_dependencies(servicekeywords, systemservicemap):
   dependencies = {}
-  for service in servicekeywords.keys():
-    if not dependencies.has_key(service):
+  for service in list(servicekeywords.keys()):
+    if service not in dependencies:
       dependencies[service] = {}
     for key in ('Required-Start', 'Should-Start'):
-      if not servicekeywords[service].has_key(key):
+      if key not in servicekeywords[service]:
         continue
       for depserv in servicekeywords[service][key].split():
-        if systemservicemap.has_key(depserv):
+        if depserv in systemservicemap:
           sysserv = systemservicemap[depserv]
           for serv in sysserv:
             dependencies[service][serv] = None
         else:
-          if servicekeywords.has_key(depserv):
+          if depserv in servicekeywords:
             dependencies[service][depserv] = None
     if len(dependencies[service]) == 0:
        del dependencies[service]
@@ -226,17 +228,17 @@ def create_service_dependencies(servicekeywords, systemservicemap):
 #	'Provides' services to real service script names...
 #
 def map_script_services(sysservmap, servicekeywords):
-  for service in servicekeywords.keys():
-    if not servicekeywords[service].has_key('Provides'):
+  for service in list(servicekeywords.keys()):
+    if 'Provides' not in servicekeywords[service]:
       continue
     for provided in servicekeywords[service]['Provides'].split():
-      if not sysservmap.has_key(provided):
+      if provided not in sysservmap:
         sysservmap[provided] = []
       sysservmap[provided].append(service)
   return sysservmap
 
 def create_cib_update(keywords, depmap):
-  services =  keywords.keys()
+  services =  list(keywords.keys())
   services.sort()
   result = ""
   # Create the XML for the resources
@@ -251,40 +253,40 @@ def create_cib_update(keywords, depmap):
     rid = keywords[service]["_RESOURCENAME_"]
     monid = "OPmon_" + sysname + '_' + service
     result += \
-        '  <primitive id="' + rid + '" class="lsb" type="'+ service +	\
-        '">\n' + 							\
-        '   <instance_attributes/>\n' +					\
+        '  <primitive id="' + rid + '" class="lsb" type="'+ service + \
+        '">\n' + \
+        '   <instance_attributes/>\n' + \
         '   <operations>\n'
-    if  not NoMonitor.has_key(service):
+    if  service not in NoMonitor:
       result += \
         '    <op id="' + monid + '" name="monitor" interval="30s" timeout="30s"/>\n'
     result += \
-        '   </operations>\n'						\
+        '   </operations>\n' \
         '  </primitive>\n'
   result += ' </group>\n'
   result += '</resources>\n'
-  services = depmap.keys()
+  services = list(depmap.keys())
   services.sort()
   result += '<constraints>\n'
   for service in services:
     rid = keywords[service]["_RESOURCENAME_"]
-    deps = depmap[service].keys()
+    deps = list(depmap[service].keys())
     deps.sort()
     for dep in deps:
-      if not keywords.has_key(dep):
+      if dep not in keywords:
         continue
       depid = keywords[dep]["_RESOURCENAME_"]
       orderid='O_' + sysname + '_' + service + '_' + dep
       result += ' <rsc_order id="' + orderid + '" from="' + rid + \
-		'" to="' + depid + '" type="after"/>\n'
+                '" to="' + depid + '" type="after"/>\n'
   loc_id="Loc_" + sysname + "_localinit"
   rule_id="LocRule_" + sysname + "_localinit"
   expr_id="LocExp_" + sysname + "_localinit"
 
   result += ' <rsc_location id="' + loc_id + '" rsc="' + groupname + '">\n'
   result += '  <rule id="' + rule_id + '" score="-INFINITY">\n'
-  result += '   <expression attribute="#uname" id="' + expr_id +	\
-			'" operation="ne" value="' + sysname + '"/>\n'
+  result += '   <expression attribute="#uname" id="' + expr_id + \
+            '" operation="ne" value="' + sysname + '"/>\n'
   result += '   </rule>\n'
   result += ' </rsc_location>\n'
   result += '</constraints>\n'
@@ -296,20 +298,20 @@ def create_cib_update(keywords, depmap):
 
 
 def remove_a_prereq(service, servicemap, keywords, deps):
-  if deps.has_key(service):
-    parents = deps[service].keys()
+  if service in deps:
+    parents = list(deps[service].keys())
     del deps[service]
   else:
     parents = []
-  if servicemap.has_key(service):
+  if service in servicemap:
     del servicemap[service]
-  if keywords.has_key(service):
+  if service in keywords:
     del keywords[service]
   for parent in parents:
-    if not deps.has_key(parent):
+    if parent not in deps:
       continue
     remove_a_prereq(parent, servicemap, keywords, deps)
-    
+
 
 def remove_important_prereqs(prereqs, servicemap, keywords, deps):
   # Find everything these important prereqs need and get rid of them...
@@ -323,4 +325,4 @@ map_script_services(SysServiceMap, ServiceKeywords)
 ServiceDependencies = create_service_dependencies(ServiceKeywords,SysServiceMap)
 remove_important_prereqs(PreReqs, SysServiceMap, ServiceKeywords, ServiceDependencies)
 
-print create_cib_update(ServiceKeywords, ServiceDependencies)
+print(create_cib_update(ServiceKeywords, ServiceDependencies))

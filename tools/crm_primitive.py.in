@@ -2,6 +2,9 @@
 
 '''Create an XML fragment describing a new resource
 '''
+from __future__ import absolute_import
+from __future__ import print_function
+from six.moves import range
 
 __copyright__='''
 Author: Andrew Beekhof <andrew@beekhof.net>
@@ -56,24 +59,24 @@ def create_cib() :
 	configuration.appendChild(constraints)
 
 	return doc, resources, constraints
-	
+
 def cib_resource(doc, id, ra_class, type, provider):
 
 	params = None
-	
+
 	resource = doc.createElement("primitive")
-	
+
 	resource.setAttribute("id",    id)
 	resource.setAttribute("type",  type)
 	resource.setAttribute("class", ra_class)
-	
+
 	if ra_class == "ocf":
 		if not provider:
 			provider = "heartbeat"
 		resource.setAttribute("provider", provider)
 
-	elif ra_class != "lsb" and ra_class != "heartbeat": 
-		print "Unknown resource class: "+ ra_class
+	elif ra_class != "lsb" and ra_class != "heartbeat":
+		print("Unknown resource class: "+ ra_class)
 		return None
 
 	operations = doc.createElement("operations")
@@ -110,7 +113,7 @@ def cib_resource(doc, id, ra_class, type, provider):
 	for i in range(0,len(rsc_options)) :
 		if rsc_options[i] == None :
 			continue
-	
+
 		param = string.split(rsc_options[i], "=")
 		nvpair = doc.createElement("nvpair")
 		nvpair.setAttribute("id",    id + "_" + param[0])
@@ -141,7 +144,7 @@ def cib_rsc_colocation(doc, id, other_resource, score):
 	return rsc_colocation
 
 def print_usage():
-	print "usage: " \
+	print("usage: " \
 	    + sys.argv[0] \
 	    + " --name <string>"\
 	    + " --class <string>"\
@@ -155,14 +158,14 @@ def print_usage():
 	    + "\n\t"\
 	    + " [--rsc-option name=value]*"\
 	    + " [--rsc-location uname=score]*"\
-	    + " [--rsc-colocation resource=score]*"
-	print "Example:\n\t" + sys.argv[0] \
+	    + " [--rsc-colocation resource=score]*")
+	print("Example:\n\t" + sys.argv[0] \
 	    + " --name cluster_ip_1 --type IPaddr --provider heartbeat --class ocf "\
-	    + "--rsc-option ip=192.168.1.101 --rsc-location node1=500 | cibadmin -C -p"
+	    + "--rsc-option ip=192.168.1.101 --rsc-location node1=500 | cibadmin -C -p")
 	sys.exit(1)
-    
+
 if __name__=="__main__" :
-	
+
 	# Process arguments...
 	skipthis = None
 	args = sys.argv[1:]
@@ -173,7 +176,7 @@ if __name__=="__main__" :
 		if skipthis :
 			skipthis = None
 			continue
-		
+
 		elif args[i] == "--name" :
 			skipthis = True
 			rsc_name = args[i+1]
@@ -212,15 +215,15 @@ if __name__=="__main__" :
 			if params[1] != None:
 				rsc_options.append(args[i+1])
 			else:
-				print "option '"+args[i+1]+"'  must be of the form name=value"
-				       
+				print("option '"+args[i+1]+"'  must be of the form name=value")
+
 		elif args[i] == "--rsc-location" :
 			skipthis = True
 			params = string.split(args[i+1], "=")
 			if params[1] != None:
 			    rsc_location.append(args[i+1])
 			else:
-			    print "option '"+args[i+1]+"'  must be of the form host=score"
+			    print("option '"+args[i+1]+"'  must be of the form host=score")
 
 		elif args[i] == "--rsc-colocation" :
 			skipthis = True
@@ -228,12 +231,12 @@ if __name__=="__main__" :
 			if params[1] != None:
 				rsc_colocation.append(args[i+1])
 			else:
-				print "option '"+args[i+1]+"' must be of the form resource=score" 
+				print("option '"+args[i+1]+"' must be of the form resource=score")
 
 		elif args[i] == "--rsc-only" :
 			print_rsc_only = 1
 		else:
-			print "Unknown argument: "+ args[i]
+			print("Unknown argument: "+ args[i])
 			print_usage()
 
 	cib = create_cib()
@@ -242,7 +245,7 @@ if __name__=="__main__" :
 	resource = cib_resource(cib[0], rsc_name, rsc_class, rsc_type, rsc_provider)
 
 	if print_rsc_only:
-		print resource.toprettyxml()
+		print(resource.toprettyxml())
 		sys.exit(0)
 
 	cib[1].appendChild(resource)
@@ -260,9 +263,9 @@ if __name__=="__main__" :
 	for i in range(0, len(rsc_colocation)) :
 		if rsc_location[i] == None :
 			continue
-		
+
 		param = string.split(rsc_colocation[i], "=")
 		colocation_rule = cib_rsc_colocation(cib[0], rsc_name, param[0], param[1])
 		cib[2].appendChild(colocation_rule)
 
-	print cib[0].toprettyxml()
+	print(cib[0].toprettyxml())
