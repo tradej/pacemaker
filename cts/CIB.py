@@ -1,5 +1,7 @@
 '''CTS: Cluster Testing System: CIB generator
 '''
+from __future__ import absolute_import
+from __future__ import print_function
 __copyright__ = '''
 Author: Andrew Beekhof <abeekhof@suse.de>
 Copyright (C) 2008 Andrew Beekhof
@@ -32,7 +34,7 @@ class CibBase:
         else:
             self.values.append(key)
 
-from cib_xml import *
+from .cib_xml import *
 
 
 class ConfigBase:
@@ -94,7 +96,7 @@ class CIB11(ConfigBase):
 
             r = Resource(self.Factory, name, self.CM.Env["IPagent"], standard)
             r["ip"] = ip
-        
+
             if ":" in ip:
                 r["cidr_netmask"] = "64"
                 r["nic"] = "eth0"
@@ -105,7 +107,7 @@ class CIB11(ConfigBase):
             if not name:
                 name = "r%s%d" % (self.CM.Env["IPagent"], self.counter)
                 self.counter = self.counter + 1
-	    r = Resource(self.Factory, name, self.CM.Env["IPagent"], standard)
+        r = Resource(self.Factory, name, self.CM.Env["IPagent"], standard)
 
         r.add_op("monitor", "5s")
         return r
@@ -387,7 +389,7 @@ class ConfigFactory:
         """register a constructor"""
         _args = [constructor]
         _args.extend(args)
-        setattr(self, methodName, apply(ConfigFactoryItem,_args, kargs))
+        setattr(self, methodName, ConfigFactoryItem(*_args, **kargs))
 
     def unregister(self, methodName):
         """unregister a constructor"""
@@ -426,11 +428,11 @@ class ConfigFactoryItem:
         _args.extend(args)
         _kargs = self._kargs.copy()
         _kargs.update(kargs)
-        return apply(self._function,_args,_kargs)
+        return self._function(*_args, **_kargs)
 
 # Basic Sanity Testing
 if __name__ == '__main__':
-    import CTSlab
+    from . import CTSlab
     env = CTSlab.LabEnvironment()
     env["nodes"] = []
     env["nodes"].append("pcmk-1")
@@ -449,4 +451,4 @@ if __name__ == '__main__':
 
     CibFactory = ConfigFactory(manager)
     cib = CibFactory.createConfig("pacemaker-1.1")
-    print cib.contents()
+    print(cib.contents())
